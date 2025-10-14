@@ -1,16 +1,17 @@
-# Node.js
-# Build a general Node.js project with npm.
-# Add steps that analyze code, save build artifacts, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
-
 trigger:
 - master
 
 pool:
-  #vmImage: ubuntu-latest
-   name: Default
-   demands:
-     - agent.name -equals agent-vinci  # after equals the name of your agent 
+  name: Default
+  demands:
+    - agent.name -equals agent-vinci
+
+variables:
+  # replace by the name of you App Service
+  appName: 'groupe4'
+  # replace by your azure subscription !
+  # sommething like Azure for Students(a6b57087-18b9-45fsdf)
+  azureSubscription: 'Azure for Students(010039a9-03f9-4d13-be1f-08fbd6b66a2b)'  
 
 steps:
 - task: NodeTool@0
@@ -18,7 +19,40 @@ steps:
     versionSpec: '20.x'
   displayName: 'Install Node.js'
 
-- script: |
-    npm install
-    npm run build
-  displayName: 'npm install and build'
+- script: npm install
+  displayName: 'Install Dependencies'
+
+- script: npm run test
+  displayName: 'Run Jest tests'
+
+- task: PublishTestResults@2
+  condition: succeededOrFailed()
+  inputs:
+    testResultsFormat: 'JUnit'
+    testResultsFiles: '**/junit.xml'
+    failTaskOnFailedTests: true
+  displayName: 'Publish Results on Azure DevOps interface'
+
+- script: npm run build
+  displayName: 'Build the project'
+  condition: succeeded() # Build si seulement les tests sont passés
+
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
+    replaceExistingArchive: true
+  condition: succeeded()  # Archive seulement si tout a réussi avant
+
+- task: AzureRmWebAppDeployment@5
+  inputs:
+    ConnectionType: 'AzureRM'
+    azureSubscription: '$(azureSubscription)'
+    appType: 'webAppLinux'
+    WebAppName: '$(appName)'
+    packageForLinux: '$(Build.ArtifactStagingDirectory)/app.zip'
+    DeploymentTypeLinux: 'oneDeploy'
+  displayName: 'Deploy to Azure App Service'
+  condition: succeeded()  # Déploie uniquement si tout a réussi (tests inclus)

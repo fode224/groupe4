@@ -8,13 +8,21 @@ app.use(express.json());
 app.get('/', (_req, res) => {
   res.send('Hello TypeScript + Express!');
 });
+
 app.get('/', (_req, res) => {
   res.send('route de fode');
 });
+
 app.get('/', (_req, res) => {
   res.send('route de rayan');
 });
 
+/* 
+  Il suffit maintenant de merge les branches une par une dans le main
+  Resoudre les conflit
+  Commit et push le main
+  Supprimer envetuellement les branches
+*/
 
 app.listen(port, () => {
   console.log(`Serveur lancé sur http://localhost:${port}`);

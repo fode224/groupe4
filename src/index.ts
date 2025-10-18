@@ -11,6 +11,9 @@ app.get('/', (_req, res) => {
 app.get('/', (_req, res) => {
   res.send('route de fode');
 });
+app.get('/', (_req, res) => {
+  res.send('route de rayan');
+});
 
 
 app.listen(port, () => {

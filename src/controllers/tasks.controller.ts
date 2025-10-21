@@ -14,7 +14,7 @@ const allTasks = [
  * This function returns all the tasks
  */
 tasksController.get("/", (req: Request, res: Response) => {
-  console.log("[GET] /tasks/");
+  console.log("[GET] /tasks/f");
   res.status(200).json(allTasks);
 });
 

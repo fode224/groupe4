@@ -1,12 +1,19 @@
-import { Request, Response } from "express";
-import { emprunts } from "../models/empruntModel";
+import express , { Request, Response } from "express";
+import { emprunts } from "../models/borrow.model";
+import { isEmprunt } from "../utils/borrow.utils";
+import { isValidBorrowData } from "../utils/borrow.utils";
 
-export const boorowBook = (req : Request, res: Response) => {
+const router = express.Router();
+
+router.post("/",(req : Request, res: Response) => {
     const {userId, bookId} = req.body;
 
     if(! userId || !bookId){
         return res.status(400).json({message: "UserId and BookId is required"})
     }
+    if (!isValidBorrowData(req.body)) {
+    return res.status(400).json({ message: "userId and bookId are required" });
+  }
     const emprunt ={
         id: emprunts.length +1,
         userId,
@@ -14,10 +21,14 @@ export const boorowBook = (req : Request, res: Response) => {
         borrowedAt : new Date(),
         dueDate : new Date(Date.now() + 14*24*60*60*1000),
     };
+    if (!isEmprunt(emprunt)) {
+    return res.status(500).json({ message: "Internal format error" });
+  }
     emprunts.push(emprunt);
     res.status(201).json(emprunt);
-};
-export const prolongBorrow = (req: Request, res: Response) => {
+});
+
+router.put("/:id/prolong",(req: Request, res: Response) => {
   const { id } = req.params;
   const emprunt = emprunts.find(e => e.id === parseInt(id));
 
@@ -25,9 +36,10 @@ export const prolongBorrow = (req: Request, res: Response) => {
 
   emprunt.dueDate = new Date(emprunt.dueDate.getTime() + 7 * 24 * 60 * 60 * 1000); 
   res.json(emprunt);
-};
+});
 
-
-export const getAllBorrows = (req: Request, res: Response) => {
+router.get("/", (req: Request, res: Response) => {
   res.json(emprunts);
-};
+});
+
+export default router;

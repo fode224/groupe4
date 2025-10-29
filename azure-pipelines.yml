@@ -1,0 +1,58 @@
+trigger:
+  branches:
+    include:
+      - master
+      - nawfal
+
+pool:
+  name: Default
+  demands:
+    - agent.name -equals nawfal-agent
+
+variables:
+  appName: "groupe4"
+  azureSubscription: "Azure for Students(010039a9-03f9-4d13-be1f-08fbd6b66a2b)"
+
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: "20.x"
+    displayName: "Install Node.js"
+
+  - script: npm install
+    displayName: "Install Dependencies"
+
+  - script: npm run test
+    displayName: "Run Jest tests"
+
+  - task: PublishTestResults@2
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: "JUnit"
+      testResultsFiles: "**/junit.xml"
+      failTaskOnFailedTests: true
+    displayName: "Publish Results on Azure DevOps interface"
+
+  - script: npm run build
+    displayName: "Build the project"
+    condition: succeeded()
+
+  - task: ArchiveFiles@2
+    inputs:
+      rootFolderOrFile: "$(System.DefaultWorkingDirectory)"
+      includeRootFolder: false
+      archiveType: "zip"
+      archiveFile: "$(Build.ArtifactStagingDirectory)/app.zip"
+      replaceExistingArchive: true
+    condition: succeeded()
+
+  - task: AzureRmWebAppDeployment@5
+    inputs:
+      ConnectionType: "AzureRM"
+      azureSubscription: "$(azureSubscription)"
+      appType: "webAppLinux"
+      WebAppName: "$(appName)"
+      packageForLinux: "$(Build.ArtifactStagingDirectory)/app.zip"
+      DeploymentTypeLinux: "oneDeploy"
+    displayName: "Deploy to Azure App Service"
+    condition: succeeded()
